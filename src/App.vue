@@ -1,7 +1,7 @@
 <script setup>
 import { VueFlow, useVueFlow } from '@vue-flow/core';
-import { ref, watch, onMounted } from 'vue';
-import { useDebouncedRefHistory } from '@vueuse/core';
+import { ref, watch, onMounted, computed, nextTick } from 'vue';
+import { useRefHistory, watchDebounced, watchThrottled } from '@vueuse/core';
 
 const initial = [
   {
@@ -34,22 +34,25 @@ const initial = [
   { id: 'e3-4', source: '3', target: '4' },
 ];
 
-const { onConnect, addEdges, toObject } = useVueFlow();
+const { onConnect, addEdges, toObject, onMoveEnd } = useVueFlow();
 
-const elements = ref([...toObject().nodes, ...toObject().edges]);
+const elements = ref(initial);
 
-const { history, undo, redo } = useDebouncedRefHistory(elements, {
+const { history, undo, redo } = useRefHistory(elements, {
   deep: true,
-  debounce: 500,
 });
 
-watch(toObject, (v) => console.log(v));
-
-onMounted(() => {
-  elements.value = initial;
-});
+watchDebounced(
+  toObject(),
+  (v) => { 
+    elements.value = [...v.nodes, ...v.edges]
+    console.log("🚀 ~ file: App.vue:50 ~ elements.value:", elements.value)
+  },
+  { debounce: 1000 },
+)
 
 onConnect((params) => addEdges([params]));
+
 </script>
 
 <template>
